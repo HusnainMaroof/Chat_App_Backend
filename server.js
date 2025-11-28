@@ -5,6 +5,7 @@ import cors from "cors"
 import cookieParser from "cookie-parser"
 import { errorHandler } from "./middleware/errorMiddleware.js"
 import { connectDB } from "./config/connectDB.js"
+import { userRouter } from "./routes/authRoutes.js"
 dotenv.config()
 
 
@@ -24,7 +25,7 @@ app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
 
 
-
+app.use("/api/user", userRouter)
 
 app.use(errorHandler)
 app.listen(port, () => console.log(`Server running on PORT: ${port}`.cyan))

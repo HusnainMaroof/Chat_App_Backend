@@ -26,26 +26,42 @@ export const UserSchema = new mongoose.Schema(
 
         country: {
             type: String,
-            required: true,
+            default: null,
             trim: true,
         },
 
         bio: {
             type: String,
-            default: "",
+            default: null,
             trim: true,
             maxlength: 160,
         },
         profilePhoto: {
             type: String,
+            default: null,
         },
         otp: {
-            code: { type: String, select: false },
-            expiresAt: { type: Date, select: false },
+            code: {
+                type: String, default: null,
+            },
+            expiresAt: {
+                type: Date, default: null,
+            },
         },
         isVerified: {
             type: Boolean,
             default: false,
+        },
+        profileVerified: {
+            type: Boolean,
+            default: false,
+        },
+        signupSession: {
+            id: {
+                type: String,
+                default: null
+            },
+            expiresAt: { type: Date, default: null },
         },
     },
     { timestamps: true }
