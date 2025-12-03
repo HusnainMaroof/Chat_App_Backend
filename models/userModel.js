@@ -63,6 +63,13 @@ export const UserSchema = new mongoose.Schema(
             },
             expiresAt: { type: Date, default: null },
         },
+        resetPassword: {
+            id: {
+                type: String,
+                default: null
+            },
+            expiresAt: { type: Date, default: null },
+        }
     },
     { timestamps: true }
 );

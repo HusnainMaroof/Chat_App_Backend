@@ -4,7 +4,7 @@ import crypto from "crypto"
 import bcrypt from "bcrypt"
 import { sentOtp } from "../lib/sendOTP.js"
 import jwt from "jsonwebtoken"
-import path from "path"
+import { reSetPassowordMail } from "../lib/sendPasswordLink.js"
 
 export const regUser = async (req, res) => {
     try {
@@ -177,7 +177,7 @@ export const login = async (req, res) => {
         let tooken = jwt.sign({ id: getUser?._id }, process.env.JWT_SECRET, { expiresIn: "7d" })
 
 
-        res.cookie("auth_tooken", tooken, {
+        res.cookie("auth_cookie", tooken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
@@ -185,7 +185,12 @@ export const login = async (req, res) => {
             maxAge: 7 * 24 * 60 * 60
 
         })
-
+        res.send({
+            userName: getUser.userName,
+            email: getUser.email,
+            profileVerified: getUser.profileVerified,
+            isVerified: getUser.isVerified
+        })
 
     } catch (error) {
         res.status(500)
@@ -262,7 +267,7 @@ export const reSendOtp = async (req, res) => {
 
 
 
-export const reSetPassword = async (req, res) => {
+export const ReSetPassowrdLink = async (req, res) => {
 
     const { email } = req.body
 
@@ -278,4 +283,56 @@ export const reSetPassword = async (req, res) => {
         throw new Error("user not Exsited")
     }
 
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const newExpiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    getUser.resetPassword.id = resetToken
+    getUser.resetPassword.expiresAt = newExpiresAt
+    let newUser = await getUser.save()
+    let link = `${process.env.FRONTEND_ORIGIN}/reset-password/${resetToken}`;
+
+    reSetPassowordMail(email, link)
+    res.send({ link: "link sended" })
+}
+
+
+
+export const ReSetPassword = async (req, res) => {
+    let Link = req.params.Link
+    const { newPassoword } = req.body
+
+    if (!newPassoword) {
+        res.status(400)
+        throw new Error("new Password in not provided")
+    }
+    if (!Link) {
+        res.status(400)
+        throw new Error("new Link in not provided")
+    }
+
+    let findUser = await UserModel.findOne({
+        "resetPassword.id": Link,
+        "resetPassword.expiresAt": { $gt: new Date() }
+    })
+
+
+    if (!findUser) {
+        res.status(401)
+        throw new Error("INVALID_TOKEN OR TOEKN EXPIRED")
+
+    }
+    let hash = await bcrypt.hash(newPassoword, 10)
+    findUser.password = hash
+    findUser.resetPassword.expiresAt = null
+    findUser.resetPassword.id = null
+    let newUser = await findUser.save()
+
+    res.send("password has been Re_Set")
+}
+
+
+export const auth_Me = (req, res) => {
+
+    const user = req?.user
+
+    res.send(user)
 }
