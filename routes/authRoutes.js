@@ -1,5 +1,5 @@
 import express from "express"
-import { auth_Me, login, regUser, ReSetPassowrdLink, ReSetPassword, verfiyOtp } from "../controller/authController.js"
+import { auth_Me, login, regUser, ReSetPassowrdLink, ReSetPassword, updateProfile, verfiyOtp } from "../controller/authController.js"
 import { protectRoute } from "../middleware/authMiddleware.js"
 
 
@@ -12,5 +12,6 @@ userRouter.post("/verfiy_otp", verfiyOtp)
 userRouter.post("/reSet_Password_Link", ReSetPassowrdLink )
 userRouter.post("/reSet_Password/:Link", ReSetPassword)
 userRouter.post("/Login", login)
-userRouter.post("/auth_Me", protectRoute, auth_Me)
+userRouter.put("/update_Profile", protectRoute , updateProfile)
+userRouter.get("/auth_Me", protectRoute, auth_Me)
 

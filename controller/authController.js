@@ -5,7 +5,7 @@ import bcrypt from "bcrypt"
 import { sentOtp } from "../lib/sendOTP.js"
 import jwt from "jsonwebtoken"
 import { reSetPassowordMail } from "../lib/sendPasswordLink.js"
-
+import cloudinary from "../lib/cloudinary.js"
 export const regUser = async (req, res) => {
     try {
         const { userName, email, password } = req.body
@@ -122,13 +122,14 @@ export const verfiyOtp = async (req, res) => {
     })
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    const expiresIn = 7 * 24 * 60 * 60 * 1000;
 
     res.cookie("auth_cookie", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         path: '/',
-        maxAge: 7 * 24 * 60 * 60,
+        maxAge: expiresIn
 
     })
 
@@ -173,7 +174,7 @@ export const login = async (req, res) => {
             throw new Error("Invalid  pass")
         }
 
-
+        const expiresIn = 7 * 24 * 60 * 60 * 1000;
         let tooken = jwt.sign({ id: getUser?._id }, process.env.JWT_SECRET, { expiresIn: "7d" })
 
 
@@ -182,14 +183,17 @@ export const login = async (req, res) => {
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
             path: "/",
-            maxAge: 7 * 24 * 60 * 60
+            maxAge: expiresIn
 
         })
         res.send({
             userName: getUser.userName,
             email: getUser.email,
             profileVerified: getUser.profileVerified,
-            isVerified: getUser.isVerified
+            isVerified: getUser.isVerified,
+            country: getUser?.country,
+            bio: getUser?.bio,
+            profilePhoto: getUser?.profilePhoto,
         })
 
     } catch (error) {
@@ -330,9 +334,44 @@ export const ReSetPassword = async (req, res) => {
 }
 
 
-export const auth_Me = (req, res) => {
+
+
+export const updateProfile = async (req, res) => {
 
     const user = req?.user
+    const { bio, country, profilePhoto } = req.body
 
-    res.send(user)
+
+    if (!bio || !country || !profilePhoto) {
+        res.status(404)
+        throw new Error("profile updated fields are requires")
+    }
+
+
+    let image_url
+    if (profilePhoto) {
+        const upload = await cloudinary.uploader.upload(profilePhoto);
+        image_url = upload.secure_url
+    }
+
+
+    const updateUser = await UserModel.findByIdAndUpdate(user._id, { country, bio, profilePhoto: image_url, profileVerified: true },)
+
+    res.status(200).json(updateUser)
+}
+
+export const auth_Me = (req, res) => {
+
+    const { user } = req?.user
+
+    res.json({
+        userName: user?.userName,
+        email: user?.email,
+        country: user?.country,
+        bio: user?.bio,
+        isVerified: user?.isVerified,
+        profileVerified: user?.profileVerified,
+        profilePhoto: user?.profilePhoto,
+    })
+
 }

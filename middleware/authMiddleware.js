@@ -1,5 +1,9 @@
 import jwt from "jsonwebtoken";
 import { UserModel } from "../models/userModel.js";
+import { client as redisClient } from "../config/connectRedis.js";
+
+const getCacheKey = (userId) => `user:profile:${userId}`;
+const TTL_SECONDS = 86400;
 
 export const protectRoute = async (req, res, next) => {
     const cookieToken = req.cookies?.auth_cookie;
@@ -24,12 +28,36 @@ export const protectRoute = async (req, res, next) => {
 
     try {
         const payload = await jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] })
-        const user = await UserModel.findById(payload.id)
-        if (!user || !user.isVerified) {
-            res.status(401)
-            throw new Error("IN_VAILD_USER")
 
+
+        // set cashe
+
+        const userId = payload.id
+        const cacheKey = getCacheKey(userId)
+        let user
+        const getCachedUser = await redisClient.get(cacheKey)
+
+        if (getCachedUser) {
+            console.log(`[Redis Middleware] HIT for user ${userId}. Skipping DB lookup.`);
+            user = JSON.parse(getCachedUser)
+
+        } else {
+
+            let dbUser = await UserModel.findById(payload.id)
+            if (!dbUser || !dbUser.isVerified) {
+                res.status(401)
+                throw new Error("IN_VAILD_USER")
+
+            }
+
+            user = dbUser
+            const userString = JSON.stringify(user)
+            await redisClient.set(cacheKey, userString, { EX: TTL_SECONDS })
+            console.log(`[Redis Middleware] Data cached for user ${userId}.`);
         }
+
+
+
 
         req.user = { user: user }
 
