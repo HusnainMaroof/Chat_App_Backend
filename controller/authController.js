@@ -6,6 +6,7 @@ import { sentOtp } from "../lib/sendOTP.js"
 import jwt from "jsonwebtoken"
 import { reSetPassowordMail } from "../lib/sendPasswordLink.js"
 import cloudinary from "../lib/cloudinary.js"
+import { config } from "../config/EnvConfig.js"
 export const regUser = async (req, res) => {
     try {
         const { userName, email, password } = req.body
@@ -48,7 +49,7 @@ export const regUser = async (req, res) => {
 
         res.cookie("signup_session", SignUpSessionID, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
+            secure: config.NODE_ENV === "production",
             sameSite: "lax",
             path: "/",
             maxAge: 10 * 60 * 1000,
@@ -115,18 +116,18 @@ export const verfiyOtp = async (req, res) => {
     let response = await user.save()
     res.clearCookie("signup_session", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: config.NODE_ENV === "production",
         sameSite: "lax",
         path: "/",
 
     })
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign({ id: user._id }, config.JWT_SECRET, { expiresIn: "7d" });
     const expiresIn = 7 * 24 * 60 * 60 * 1000;
 
     res.cookie("auth_cookie", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: config.NODE_ENV === "production",
         sameSite: "lax",
         path: '/',
         maxAge: expiresIn
@@ -175,12 +176,12 @@ export const login = async (req, res) => {
         }
 
         const expiresIn = 7 * 24 * 60 * 60 * 1000;
-        let tooken = jwt.sign({ id: getUser?._id }, process.env.JWT_SECRET, { expiresIn: "7d" })
+        let tooken = jwt.sign({ id: getUser?._id }, config.JWT_SECRET, { expiresIn: "7d" })
 
 
         res.cookie("auth_cookie", tooken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
+            secure: config.NODE_ENV === "production",
             sameSite: "lax",
             path: "/",
             maxAge: expiresIn
@@ -252,7 +253,7 @@ export const reSendOtp = async (req, res) => {
         let newUser = await getUser.save()
         res.cookie("signup_session", NewSignUpSessionID, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
+            secure: config.NODE_ENV === "production",
             sameSite: "lax",
             path: "/",
             maxAge: newExpiresAt
@@ -292,7 +293,7 @@ export const ReSetPassowrdLink = async (req, res) => {
     getUser.resetPassword.id = resetToken
     getUser.resetPassword.expiresAt = newExpiresAt
     let newUser = await getUser.save()
-    let link = `${process.env.FRONTEND_ORIGIN}/reset-password/${resetToken}`;
+    let link = `${config.FRONTEND_ORIGIN}/reset-password/${resetToken}`;
 
     reSetPassowordMail(email, link)
     res.send({ link: "link sended" })

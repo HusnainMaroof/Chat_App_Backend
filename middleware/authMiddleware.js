@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { UserModel } from "../models/userModel.js";
 import { client as redisClient } from "../config/connectRedis.js";
+import { config } from "../config/EnvConfig.js";
 
 const getCacheKey = (userId) => `user:profile:${userId}`;
 const TTL_SECONDS = 86400;
@@ -27,7 +28,7 @@ export const protectRoute = async (req, res, next) => {
     }
 
     try {
-        const payload = await jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] })
+        const payload = await jwt.verify(token, config.JWT_SECRET, { algorithms: ["HS256"] })
 
 
         // set cashe
@@ -67,3 +68,5 @@ export const protectRoute = async (req, res, next) => {
         throw new Error(`Middleware Error in Auth Middleware ${error}`)
     }
 };
+
+

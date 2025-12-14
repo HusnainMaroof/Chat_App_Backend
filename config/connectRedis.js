@@ -1,4 +1,5 @@
 import { createClient } from 'redis';
+import { config } from './EnvConfig.js';
 
 let client = null;
 
@@ -11,10 +12,10 @@ export const connectRedis = async () => {
     }
 
     // --- Configuration (Read INSIDE the function) ---
-    const host = process.env.REDIS_HOST;
-    const userName = process.env.REDIS_USERNAME;
-    const password = process.env.REDIS_PASSWORD;
-    const port = process.env.REDIS_PORT;
+    const host = config.REDIS.HOST;
+    const userName = config.REDIS.USERNAME;
+    const password = config.REDIS.PASSWORD;
+    const port = config.REDIS.PORT;
 
 
     // Critical check: if variables are still missing, log the error and stop.
@@ -64,3 +65,6 @@ Please verify the host/port/password and check network access to your Redis Labs
 
 // Export the client instance for use in controllers/services
 export { client };
+
+
+

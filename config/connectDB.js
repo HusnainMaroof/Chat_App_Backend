@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
+import { config } from "./EnvConfig.js";
 
 export const connectDB = async () => {
-    const uri = process.env.MONGOO_DB_URI
+    const uri = config.MONGO.DB_URI
     if (!uri) console.log("Mongo Uri Missing ");
 
     try {
@@ -14,3 +15,5 @@ export const connectDB = async () => {
     }
 
 }
+
+

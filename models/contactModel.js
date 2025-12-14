@@ -27,6 +27,10 @@ const contactSchema = mongoose.Schema(
                     type: String,
                     default: null
                 },
+                email: {
+                    type: String,
+                    default: null
+                },
                 lastMessage: {
                     type: String,
                     trim: true,
