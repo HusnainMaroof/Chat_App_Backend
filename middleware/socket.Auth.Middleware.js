@@ -38,7 +38,7 @@ export const socketAuthMiddleware = async (socket, next) => {
         let cacheKey = getCacheKey(userId)
         let getCachedUser = await redisClient.get(cacheKey)
 
-        if (getCacheKey) {
+        if (getCachedUser) {
             console.log(`redis hit cashed user data for ${userId} from socket Middleware`);
             user = JSON.parse(getCachedUser)
         } else {
@@ -62,7 +62,7 @@ export const socketAuthMiddleware = async (socket, next) => {
         next()
 
     } catch (error) {
-        console.log("internal Server Error from socket Middleware");
+        console.log("internal Server Error from socket Middleware ");
         next(new Error("TOKEN_MISSING"))
 
     }

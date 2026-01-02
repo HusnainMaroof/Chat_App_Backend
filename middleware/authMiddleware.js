@@ -21,6 +21,7 @@ export const protectRoute = async (req, res, next) => {
     if (!token && cookieToken) {
         token = cookieToken;
     }
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     if (!token) {
         res.status(401);
@@ -65,7 +66,9 @@ export const protectRoute = async (req, res, next) => {
         return next()
     } catch (error) {
         res.status(500)
-        throw new Error(`Middleware Error in Auth Middleware ${error}`)
+        console.log(error);
+        throw new Error(`Middleware Error in Auth Middleware`)
+
     }
 };
 

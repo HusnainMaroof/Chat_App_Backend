@@ -7,61 +7,59 @@ import jwt from "jsonwebtoken"
 import { reSetPassowordMail } from "../lib/sendPasswordLink.js"
 import cloudinary from "../lib/cloudinary.js"
 import { config } from "../config/EnvConfig.js"
+
+import { client as redisClient } from "../config/connectRedis.js"
 export const regUser = async (req, res) => {
-    try {
-        const { userName, email, password } = req.body
+
+    const { userName, email, password } = req.body
 
 
 
-        if (!userName || !email || !password) {
-            res.status(400)
-            throw new Error("User Credentials not provided")
-        }
-
-
-
-        let checkEmail = await UserModel.findOne({ email })
-
-        if (checkEmail) {
-            res.status(409)
-            throw new Error("Email already exists")
-
-
-        }
-        let hashPassword = await bcrypt.hash(password, 10)
-
-        let otp = otpGenrator.generate(4, { upperCaseAlphabets: false, lowerCaseAlphabets: false, specialChars: false, digits: true })
-
-        const otpExpirtesAt = new Date(Date.now() + 60 * 60 * 1000)
-
-        let createUser = await UserModel.create({
-            userName, email, password: hashPassword, otp: { code: otp, expiresAt: otpExpirtesAt }
-        })
-
-
-        sentOtp(email, otp)
-
-
-        const SignUpSessionID = crypto.randomBytes(32).toString("base64url")
-
-        createUser.signupSession = { id: SignUpSessionID, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
-        let user = await createUser.save()
-
-        res.cookie("signup_session", SignUpSessionID, {
-            httpOnly: true,
-            secure: config.NODE_ENV === "production",
-            sameSite: "lax",
-            path: "/",
-            maxAge: 10 * 60 * 1000,
-        })
-
-
-        res.send(user)
-    } catch (error) {
-
-        res.status(500)
-        throw new Error(`Inernal Server in Reg_user Controler ${error}`)
+    if (!userName || !email || !password) {
+        res.status(400)
+        throw new Error("User Credentials not provided")
     }
+
+
+
+    let checkEmail = await UserModel.findOne({ email })
+
+    if (checkEmail) {
+        res.status(409)
+        throw new Error("Email already exists")
+
+
+    }
+    let hashPassword = await bcrypt.hash(password, 10)
+
+    let otp = otpGenrator.generate(4, { upperCaseAlphabets: false, lowerCaseAlphabets: false, specialChars: false, digits: true })
+
+    const otpExpirtesAt = new Date(Date.now() + 60 * 60 * 1000)
+
+    let createUser = await UserModel.create({
+        userName, email, password: hashPassword, otp: { code: otp, expiresAt: otpExpirtesAt }
+    })
+
+
+    sentOtp(email, otp)
+
+
+    const SignUpSessionID = crypto.randomBytes(32).toString("base64url")
+
+    createUser.signupSession = { id: SignUpSessionID, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+    let user = await createUser.save()
+
+    res.cookie("signup_session", SignUpSessionID, {
+        httpOnly: true,
+        secure: config.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 10 * 60 * 1000,
+    })
+
+
+    res.send("Registration Done")
+
 
 
 }
@@ -147,62 +145,45 @@ export const verfiyOtp = async (req, res) => {
 
 
 export const login = async (req, res) => {
-    try {
+    const { email, password } = req.body
+    if (!email || !password) {
+        res.status(400)
+        throw new Error("Email and password are required");
+    }
 
-        const { email, password } = req.body
-        if (!email || !password) {
-            res.status(400)
-            throw new Error("Email and password are required");
-        }
+    let getUser = await UserModel.findOne({ email })
 
-        let getUser = await UserModel.findOne({ email })
-
-        if (!getUser) {
-            res.status(404)
-            throw new Error("invalid Credentials ")
-        }
-
-
-        if (getUser?.email !== email) {
-            res.status(401)
-            throw new Error("Invalid  Email")
-        }
-
-        let checkPass = await bcrypt.compare(password, getUser?.password)
-
-        if (!checkPass) {
-            res.status(401)
-            throw new Error("Invalid  pass")
-        }
-
-        const expiresIn = 7 * 24 * 60 * 60 * 1000;
-        let tooken = jwt.sign({ id: getUser?._id }, config.JWT_SECRET, { expiresIn: "7d" })
-
-
-        res.cookie("auth_cookie", tooken, {
-            httpOnly: true,
-            secure: config.NODE_ENV === "production",
-            sameSite: "lax",
-            path: "/",
-            maxAge: expiresIn
-
-        })
-        res.send({
-            userName: getUser.userName,
-            email: getUser.email,
-            profileVerified: getUser.profileVerified,
-            isVerified: getUser.isVerified,
-            country: getUser?.country,
-            bio: getUser?.bio,
-            profilePhoto: getUser?.profilePhoto,
-        })
-
-    } catch (error) {
-        res.status(500)
-        throw new Error(`Inernal Server in Login Controler ${error}`)
+    if (!getUser) {
+        res.status(404)
+        throw new Error("invalid Credentials")
     }
 
 
+    if (getUser?.email !== email) {
+        res.status(401)
+        throw new Error("Invalid Email")
+    }
+
+    let checkPass = await bcrypt.compare(password, getUser?.password)
+
+    if (!checkPass) {
+        res.status(401)
+        throw new Error("Invalid pass")
+    }
+
+    const expiresIn = 7 * 24 * 60 * 60 * 1000;
+    let tooken = jwt.sign({ id: getUser?._id }, config.JWT_SECRET, { expiresIn: "7d" })
+
+
+    res.cookie("auth_cookie", tooken, {
+        httpOnly: true,
+        secure: config.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: expiresIn
+
+    })
+    res.send("user login Successfully")
 }
 
 
@@ -260,10 +241,7 @@ export const reSendOtp = async (req, res) => {
         })
 
 
-        res.send({
-            email: newUser?.email,
-            otp: newUser?.otp?.code
-        })
+        res.send("Otp Resend Successfully")
     } catch (error) {
         res.status(500)
         throw new Error(`Inernal Server in ReSentOtp Controler ${error}`)
@@ -281,6 +259,7 @@ export const ReSetPassowrdLink = async (req, res) => {
         throw new Error("Email not provided")
     }
     const getUser = await UserModel.findOne({ email })
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
 
     if (!getUser) {
@@ -303,9 +282,9 @@ export const ReSetPassowrdLink = async (req, res) => {
 
 export const ReSetPassword = async (req, res) => {
     let Link = req.params.Link
-    const { newPassoword } = req.body
+    const { newPassword } = req.body
 
-    if (!newPassoword) {
+    if (!newPassword) {
         res.status(400)
         throw new Error("new Password in not provided")
     }
@@ -325,46 +304,86 @@ export const ReSetPassword = async (req, res) => {
         throw new Error("INVALID_TOKEN OR TOEKN EXPIRED")
 
     }
-    let hash = await bcrypt.hash(newPassoword, 10)
+    let hash = await bcrypt.hash(newPassword, 10)
     findUser.password = hash
     findUser.resetPassword.expiresAt = null
     findUser.resetPassword.id = null
     let newUser = await findUser.save()
 
-    res.send("password has been Re_Set")
+    res.send("password has been ReSet")
 }
 
 
+export const getCacheKey = (userId) => `user:profile:${userId}`;
 
 
 export const updateProfile = async (req, res) => {
 
-    const user = req?.user
+    const { user } = req?.user
     const { bio, country, profilePhoto } = req.body
 
-
     if (!bio || !country || !profilePhoto) {
-        res.status(404)
-        throw new Error("profile updated fields are requires")
+        res.status(400);
+        throw new Error("All fields (bio, country, profilePhoto) are required");
     }
-
 
     let image_url
     if (profilePhoto) {
-        const upload = await cloudinary.uploader.upload(profilePhoto);
-        image_url = upload.secure_url
+        try {
+            const upload = await cloudinary.uploader.upload(profilePhoto);
+            image_url = upload.secure_url
+
+        } catch (error) {
+            console.log(error);
+            res.status(400)
+            throw new Error("file uploading Error");
+
+        }
+    }
+    let updatedUser
+
+    try {
+        updatedUser = await UserModel.findByIdAndUpdate(user._id, { country, bio, profilePhoto: image_url, profileVerified: true }, { new: true })
+
+    } catch (error) {
+        res.status(400)
+        throw new Error("Db updating Error");
+
     }
 
+    try {
 
-    const updateUser = await UserModel.findByIdAndUpdate(user._id, { country, bio, profilePhoto: image_url, profileVerified: true },)
+        await redisClient.del(getCacheKey(user._id))
+    } catch (error) {
+        res.status(400)
+        throw new Error("Error while deleting cash user after updating the user ");
+    }
 
-    res.status(200).json(updateUser)
+    res.send("profile updated")
+
+
 }
 
-export const auth_Me = (req, res) => {
+
+export const logout = async (req, res) => {
+
+    let cookieBase = {
+        httpOnly: true,
+        secure: config.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+
+    }
+
+    res.clearCookie("auth_cookie", cookieBase)
+
+    res.send("logout")
+}
+
+export const auth_Me = async (req, res) => {
 
     const { user } = req?.user
-
+    await new Promise(resolve => setTimeout(resolve, 3000));
     res.json({
         userName: user?.userName,
         email: user?.email,
