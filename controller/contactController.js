@@ -3,8 +3,6 @@ import { UserModel } from "../models/userModel.js";
 import { client as redisClient } from "../config/connectRedis.js";
 
 export const saveContact = async (req, res) => {
-  const cacheKey = `contacts:${userId}`;
-
   let updateCachedContact = false;
   try {
     const { user } = req?.user;
@@ -21,13 +19,14 @@ export const saveContact = async (req, res) => {
 
     let contactUser = await UserModel.findOne({ email });
 
-    if (!getuser) {
+    if (!contactUser) {
       res.status(404);
       throw new Error("This Contact user does not exist");
     }
 
     const userId = user._id;
     const receiverId = contactUser._id;
+    const cacheKey = `contacts:${userId}`;
 
     // Check if current user already has a contacts document
     let contactDoc = await contactModel.findOne({ ownerUserId: userId });
@@ -100,9 +99,20 @@ export const getContact = async (req, res) => {
         .json({ contacts: [], message: "No contacts found" });
     }
     // 3. Store in Redis for future requests
-    await redisClient.set(cacheKey, JSON.stringify(myContactDoc), {
-      EX: ONE_DAY_TTL,
-    });
+    await redisClient.set(
+      cacheKey,
+      JSON.stringify(myContactDoc),
+      "EX",
+      ONE_DAY_TTL
+    );
+
+    // cached only contactIds as set
+
+    const contactIds = myContactDoc.contacts.map((c) =>
+      c.contactUserId.toString()
+    );
+
+    await redisClient.sAdd(`contacts:set:${userId}`, ...contactIds);
 
     console.log(`[Redis] Miss. Data cached for userId: ${userId}`);
 
