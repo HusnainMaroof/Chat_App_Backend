@@ -10,7 +10,6 @@ export const socketAuthMiddleware = async (socket, next) => {
     let token;
 
     if (!cookieHeader) {
-      res.status(401);
       console.log("No Cookei founded");
       return next(new Error("TOKEN_MISSING"));
     }
@@ -42,7 +41,7 @@ export const socketAuthMiddleware = async (socket, next) => {
       user = JSON.parse(getCachedUser);
     } else {
       let dbUser = await UserModel.findById(userId);
-      if (dbUser || !dbUser.isVerified) {
+      if (!dbUser || !dbUser.isVerified) {
         console.log("user not found in from socket middleware");
         return next(new Error("In_Valid_User"));
       }

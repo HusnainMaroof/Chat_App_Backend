@@ -1,70 +1,71 @@
-import { createClient } from 'redis';
-import { config } from './EnvConfig.js';
+import { createClient } from "redis";
+import { config } from "./EnvConfig.js";
 
 let client = null;
 
-
 export const connectRedis = async () => {
-    // If the client is already initialized and open, exit early
-    if (client && client.isOpen) {
-        console.log("Redis client already connected.");
-        return;
-    }
+  // If the client is already initialized and open, exit early
+  if (client && client.isOpen) {
+    console.log("Redis client already connected.");
+    return;
+  }
 
-    // --- Configuration (Read INSIDE the function) ---
-    const host = config.REDIS.HOST;
-    const userName = config.REDIS.USERNAME;
-    const password = config.REDIS.PASSWORD;
-    const port = config.REDIS.PORT;
+  // --- Configuration (Read INSIDE the function) ---
+  const host = config.REDIS.HOST;
+  const userName = config.REDIS.USERNAME;
+  const password = config.REDIS.PASSWORD;
+  const port = config.REDIS.PORT;
 
+  // Critical check: if variables are still missing, log the error and stop.
+  if (!host || !password || !port) {
+    console.error(
+      "❌ Redis Configuration Error: REDIS_HOST, REDIS_PORT, or REDIS_PASSWORD is missing in environment. Connection aborted."
+    );
+    return;
+  }
 
-    // Critical check: if variables are still missing, log the error and stop.
-    if (!host || !password || !port) {
-        console.error("❌ Redis Configuration Error: REDIS_HOST, REDIS_PORT, or REDIS_PASSWORD is missing in environment. Connection aborted.");
-        return;
-    }
+  // --- Initialize the client only if it hasn't been yet ---
+  if (!client) {
+    client = createClient({
+      username: userName,
+      password: password,
+      socket: {
+        host: host,
+        port: port,
+      },
+      // Options for robustness
+      socketNodelay: true,
+    });
 
-    // --- Initialize the client only if it hasn't been yet ---
-    if (!client) {
-        client = createClient({
-            username: userName,
-            password: password,
-            socket: {
-                host: host,
-                port: port
-            },
-            // Options for robustness
-            socketNodelay: true,
-            disableOfflineQueue: true,
-        });
-
-        // Set up the error listener
-        client.on('error', err => {
-            // Check if the error is the specific connection refused error
-            if (err.code === 'ECONNREFUSED') {
-                // Log the configured host and port (the external one), not the default 6379
-                console.error(`\n❌ Redis Client Error: Connection Refused. The client attempted to connect to ${host}:${port.cyan}. 
+    // Set up the error listener
+    client.on("error", (err) => {
+      // Check if the error is the specific connection refused error
+      if (err.code === "ECONNREFUSED") {
+        // Log the configured host and port (the external one), not the default 6379
+        console.error(`\n❌ Redis Client Error: Connection Refused. The client attempted to connect to ${host}:${port.cyan}. 
 Please verify the host/port/password and check network access to your Redis Labs instance.`);
-            } else {
-                console.error('Redis Client Error:', err.message);
-            }
-        });
-    }
+      } else {
+        console.error("Redis Client Error:", err.message);
+      }
+    });
+  }
 
-    // --- Connect ---
-    try {
-        await client.connect();
-        console.log(`Successfully connected to Redis on ${host.america}:${port.cyan}.`);
-    } catch (error) {
-        // Log generic connection failure if client.on('error') didn't already handle it
-        if (error.code !== 'ECONNREFUSED') {
-            console.error(`Failed while attempting to connect to Redis.`, error.message);
-        }
+  // --- Connect ---
+  try {
+    await client.connect();
+    console.log(
+      `Successfully connected to Redis on ${host.america}:${port.cyan}.`
+    );
+  } catch (error) {
+    // Log generic connection failure if client.on('error') didn't already handle it
+    if (error.code !== "ECONNREFUSED") {
+      console.error(
+        `Failed while attempting to connect to Redis.`,
+        error.message
+      );
     }
-}
+  }
+};
 
 // Export the client instance for use in controllers/services
 export { client };
-
-
-
