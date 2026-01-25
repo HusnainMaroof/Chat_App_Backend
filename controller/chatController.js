@@ -1,16 +1,17 @@
+import mongoose from "mongoose";
 import { client as redisClient } from "../config/connectRedis.js";
 import { MessageModel } from "../models/messageModel.js";
 
 const QUEUE_NAME = "message:queue";
 
 export const startMessageWorker = async () => {
-  console.log("🚀 Message Background Worker Started...".green);
+  console.log(" Message Background Worker Started...".green);
 
   // Safety check: ensure the redisClient is initialized before duplicating
   // This prevents the "TypeError: Cannot read properties of null (reading 'duplicate')"
   if (!redisClient) {
     console.warn(
-      "[Worker]: redisClient not ready, retrying in 5 seconds...".yellow
+      "[Worker]: redisClient not ready, retrying in 5 seconds...".yellow,
     );
     setTimeout(startMessageWorker, 5000);
     return;
@@ -35,11 +36,11 @@ export const startMessageWorker = async () => {
             recipientId: msg.recipientId,
             content: msg.content,
             status: "sent",
-            createdAt: msg.createdAt,
+            timestamp: msg.timestamp,
           });
 
           console.log(
-            `[Worker] Message saved to DB: ${msg.senderId} -> ${msg.recipientId}`
+            `[Worker] Message saved to DB: ${msg.senderId} -> ${msg.recipientId}`,
           );
         }
       } catch (error) {
@@ -63,15 +64,35 @@ export const getContactHistory = async (req, res) => {
     return res.status(400).json({ message: "Contact ID is required" });
   }
 
-  //this will give message accordingly whoes is the sender and recipient and sort them leatest first and limt only 100
-  const message = await MessageModel.find({
+  const contactObjectId = new mongoose.Types.ObjectId(contactId);
+
+  // this will give message accordingly whoes is the sender and recipient and sort them leatest first and limt only 100
+  const messages = await MessageModel.find({
     $or: [
-      { senderId: userId, recipientId: contactId },
-      { recipientId: userId, userId: contactId },
+      { senderId: userId, recipientId: contactObjectId },
+      { senderId: contactObjectId, recipientId: userId },
     ],
   })
     .sort({ createdAt: -1 })
     .limit(100);
 
-  res.status(200).json(message);
+  res.status(200).json(messages);
+};
+
+
+
+
+export const sendUserNotification = async (recipientId, type, payload) => {
+  try {
+    const channel = `notifications:${recipientId}`;
+    const notificationData = {
+      type, // e.g., 'NEW_MESSAGE', 'NEW_CONTACT', 'SYSTEM_ALERT'
+      data: payload,
+      timestamp: new Date(),
+    };
+
+    await redisClient.publish(channel, JSON.stringify(notificationData));
+  } catch (error) {
+    console.error(`[Notification Error] Failed to send ${type} to ${recipientId}:`, error);
+  }
 };

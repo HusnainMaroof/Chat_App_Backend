@@ -1,6 +1,7 @@
 import { contactModel } from "../models/contactModel.js";
 import { UserModel } from "../models/userModel.js";
 import { client as redisClient } from "../config/connectRedis.js";
+import { sendUserNotification } from "./chatController.js";
 
 export const saveContact = async (req, res) => {
   try {
@@ -48,7 +49,7 @@ export const saveContact = async (req, res) => {
     } else {
       // now check if this contact is already exist in our contact list or not
       let isAlreadyAdded = contactDoc.contacts.some(
-        (c) => String(c.contactUserId) === receiverId
+        (c) => String(c.contactUserId) === receiverId,
       );
 
       //   if it is exist then throw error
@@ -108,14 +109,14 @@ export const getContact = async (req, res) => {
         contactCacheKey,
         JSON.stringify(contactsData),
         "EX",
-        SEVEN_DAYS_TTL
+        SEVEN_DAYS_TTL,
       );
       console.log(`[Redis] Miss. contact Data cached for userId: ${userId}`);
     }
 
     // now make only contact id in strings
     const contactIds = contactsData.contacts.map((c) =>
-      c.contactUserId.toString()
+      c.contactUserId.toString(),
     );
 
     // use redis multi to excute all at once
@@ -157,7 +158,7 @@ export const notifyRelatedUser = async (userId, status, userName) => {
     // Every user has their own channel: e.g., "status:654321"
     await redisClient.publish(
       `status:${userId}`,
-      JSON.stringify({ userId, status })
+      JSON.stringify({ userId, status }),
     );
   } catch (error) {
     console.error(`Error publishing status:`, error);
@@ -189,7 +190,7 @@ export const ensureMutualContact = async (senderId, recipientId) => {
       // if recipient has contact whcih redis cached must be expired then sync the redis
 
       const contactIds = contactDoc.contacts.map((c) =>
-        c.contactUserId.toString()
+        c.contactUserId.toString(),
       );
       if (contactIds.length > 0) {
         await redisClient.sAdd(recipientSetKey, contactIds);
@@ -236,10 +237,7 @@ export const ensureMutualContact = async (senderId, recipientId) => {
 
     // and finaly notifiy the recipient via pub/sub
 
-    await redisClient.publish(
-      `notifications:${recipientId}`,
-      JSON.stringify({ type: "NEW_CONTACT", data: contactData })
-    );
+    await sendUserNotification(recipientId, "New_Contact", contactData);
   } catch (error) {
     console.error("Error ensuring mutual contact:", error);
   }

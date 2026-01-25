@@ -125,6 +125,7 @@ export const verfiyOtp = async (req, res) => {
   });
 
   res.send({
+    userId: response._id,
     userName: response.userName,
     email: response.email,
     profileVerified: response.profileVerified,
@@ -309,7 +310,7 @@ export const updateProfile = async (req, res) => {
     updatedUser = await UserModel.findByIdAndUpdate(
       user._id,
       { country, bio, profilePhoto: image_url, profileVerified: true },
-      { new: true }
+      { new: true },
     );
   } catch (error) {
     res.status(400);
@@ -343,6 +344,7 @@ export const auth_Me = async (req, res) => {
   const { user } = req?.user;
   await new Promise((resolve) => setTimeout(resolve, 3000));
   res.json({
+    userId: user._id,
     userName: user?.userName,
     email: user?.email,
     country: user?.country,
