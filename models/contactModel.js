@@ -35,7 +35,7 @@ const contactSchema = mongoose.Schema(
           type: String,
           trim: true,
           maxlength: 2000,
-          default: null,
+          default: "No message yet",
         },
         // When was the last message sent
         lastMessageAt: {
@@ -45,7 +45,7 @@ const contactSchema = mongoose.Schema(
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const contactModel = mongoose.model("Contact", contactSchema);

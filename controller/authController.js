@@ -342,7 +342,7 @@ export const logout = async (req, res) => {
 
 export const auth_Me = async (req, res) => {
   const { user } = req?.user;
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+
   res.json({
     userId: user._id,
     userName: user?.userName,

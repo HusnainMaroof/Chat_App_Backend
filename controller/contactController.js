@@ -104,20 +104,19 @@ export const getContact = async (req, res) => {
           .status(404)
           .json({ contacts: [], message: "No contacts found" });
       }
-      // now cached this contacts as string in redis
       await redisClient.set(
         contactCacheKey,
-        JSON.stringify(contactsData),
+        JSON.stringify(contactsData.contacts),
         "EX",
         SEVEN_DAYS_TTL,
       );
       console.log(`[Redis] Miss. contact Data cached for userId: ${userId}`);
+      let forIds = contactsData.contacts
+      contactsData = forIds
     }
 
     // now make only contact id in strings
-    const contactIds = contactsData.contacts.map((c) =>
-      c.contactUserId.toString(),
-    );
+    const contactIds = contactsData.map((c) => c.contactUserId.toString());
 
     // use redis multi to excute all at once
     const multi = redisClient.multi();
@@ -139,9 +138,12 @@ export const getContact = async (req, res) => {
 
     // Final fallback: If Redis fails, try to at least get DB data
     try {
-      const dbData = await contactModel.findOne({ ownerUserId: userId });
+      const dbData = await contactModel
+        .findOne({ ownerUserId: userId })
+        .select("-_id contacts");
+      console.log("contact get all the way from db ");
 
-      return res.status(200).json(dbData);
+      return res.status(200).json(dbData.contacts);
     } catch (dbError) {
       return res
         .status(500)
