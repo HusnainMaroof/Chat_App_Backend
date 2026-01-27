@@ -27,7 +27,7 @@ app.use(
   cors({
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
-      if (allowedOrigin.includes(allowedOrigin)) {
+      if (allowedOrigin.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error("Cors Blocked : origin Error not Allowd "));
@@ -38,7 +38,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
-app.options('*', cors());
+app.options('/*splat', cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(cookieParser());
