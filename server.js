@@ -21,7 +21,7 @@ let origin = config.FRONTEND_ORIGIN
 connectDB()
 connectRedis()
 app.use(cors({
-    origin: origin,
+    origin: '*',
     credentials: true
 }))
 
