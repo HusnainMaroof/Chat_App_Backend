@@ -54,7 +54,7 @@ export const regUser = async (req, res) => {
   res.cookie("signup_session", SignUpSessionID, {
     httpOnly: true,
     secure: config.NODE_ENV === "production",
-    sameSite: "none",
+    sameSite: config.NODE_ENV === "production" ? "none" : "lax",
     path: "/",
     maxAge: 10 * 60 * 1000,
   });
@@ -107,7 +107,7 @@ export const verfiyOtp = async (req, res) => {
   res.clearCookie("signup_session", {
     httpOnly: true,
     secure: config.NODE_ENV === "production",
-    sameSite: "none",
+    sameSite: config.NODE_ENV === "production" ? "none" : "lax",
     path: "/",
   });
 
@@ -119,7 +119,7 @@ export const verfiyOtp = async (req, res) => {
   res.cookie("auth_cookie", token, {
     httpOnly: true,
     secure: config.NODE_ENV === "production",
-    sameSite: "none",
+    sameSite: config.NODE_ENV === "production" ? "none" : "lax",
     path: "/",
     maxAge: expiresIn,
   });
@@ -168,7 +168,7 @@ export const login = async (req, res) => {
   res.cookie("auth_cookie", tooken, {
     httpOnly: true,
     secure: config.NODE_ENV === "production",
-    sameSite: "none",
+    sameSite: config.NODE_ENV === "production" ? "none" : "lax",
     path: "/",
     maxAge: expiresIn,
   });
@@ -217,7 +217,7 @@ export const reSendOtp = async (req, res) => {
   res.cookie("signup_session", NewSignUpSessionID, {
     httpOnly: true,
     secure: config.NODE_ENV === "production",
-    sameSite: "none",
+    sameSite: config.NODE_ENV === "production" ? "none" : "lax",
     path: "/",
     maxAge: newExpiresAt,
   });
@@ -331,7 +331,7 @@ export const logout = async (req, res) => {
   let cookieBase = {
     httpOnly: true,
     secure: config.NODE_ENV === "production",
-    sameSite: "none",
+    sameSite: config.NODE_ENV === "production" ? "none" : "lax",
     path: "/",
   };
 
