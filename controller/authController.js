@@ -41,7 +41,7 @@ export const regUser = async (req, res) => {
     otp: { code: otp, expiresAt: otpExpirtesAt },
   });
 
-  sentOtp(email, otp);
+  sentOtp(email, otp, "Verifiy Otp ");
 
   const SignUpSessionID = crypto.randomBytes(32).toString("base64url");
 
@@ -50,13 +50,13 @@ export const regUser = async (req, res) => {
     expiresAt: new Date(Date.now() + 60 * 60 * 1000),
   };
   let user = await createUser.save();
-
+  const newExpiresAt = new Date(Date.now() + 60 * 60 * 1000);
   res.cookie("signup_session", SignUpSessionID, {
     httpOnly: true,
     secure: config.NODE_ENV === "production",
     sameSite: config.NODE_ENV === "production" ? "none" : "lax",
     path: "/",
-    maxAge: 10 * 60 * 1000,
+    maxAge: newExpiresAt,
   });
 
   res.send("Registration Done");
@@ -208,7 +208,7 @@ export const reSendOtp = async (req, res) => {
 
   const newExpiresAt = new Date(Date.now() + 60 * 60 * 1000);
   const NewSignUpSessionID = crypto.randomBytes(32).toString("base64url");
-  sentOtp(getUser?.email, newotp);
+  sentOtp(getUser?.email, newotp, "Verifiy Otp ");
   getUser.otp.code = newotp;
   getUser.otp.expiresAt = newExpiresAt;
   getUser.signupSession.id = NewSignUpSessionID;
@@ -228,6 +228,20 @@ export const reSendOtp = async (req, res) => {
 export const ReSetPassowrdLink = async (req, res) => {
   const { email } = req.body;
 
+  const origin = req.headers.origin;
+
+  let allowedOrigin = [
+    config.FRONTEND_ORIGIN_ONE,
+    config.FRONTEND_ORIGIN_TWO,
+    config.FRONTEND_ORIGIN_THREE,
+    config.FRONTEND_ORIGIN_FOUR,
+  ];
+
+  if (!allowedOrigin.includes(origin)) {
+    res.status(400);
+    throw new Error("Invalid Origin Or Invalid Request");
+  }
+
   if (!email) {
     res.status(404);
     throw new Error("Email not provided");
@@ -245,9 +259,9 @@ export const ReSetPassowrdLink = async (req, res) => {
   getUser.resetPassword.id = resetToken;
   getUser.resetPassword.expiresAt = newExpiresAt;
   let newUser = await getUser.save();
-  let link = `${config.FRONTEND_ORIGIN}/reset-password/${resetToken}`;
+  let link = `${origin}/reset-password/${resetToken}`;
 
-  reSetPassowordMail(email, link);
+  reSetPassowordMail(email, link, "Reset Password Link");
   res.send({ link: "link sended" });
 };
 

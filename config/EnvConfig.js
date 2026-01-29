@@ -21,8 +21,9 @@ export const config = {
   JWT_SECRET: process.env.JWT_SECRET,
 
   // Email Service Configuration (e.g., for Nodemailer)
-  EMAIL: {
-    PASS: process.env.EMAIL_PASS,
+  EMAIL_CONFIG: {
+    BREVO_SMTP_SDK_KEY: process.env.BREVO_SMTP_SDK_KEY,
+    EMAIL_FROM: process.env.EMAIL_FROM,
     // You might want to add EMAIL_USER (for the sender address) here as well
   },
 
